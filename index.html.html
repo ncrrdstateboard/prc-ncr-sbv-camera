@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+  <meta
+    name="theme-color"
+    content="#003f7d"
+  >
+  <title>PRC NCR - Secure Live Photo</title>
+
+  <style>
+    :root {
+      --prc-blue: #003f7d;
+      --prc-light-blue: #eaf3fb;
+      --border: #d5dee8;
+      --text: #16202a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+      background: #f3f6f9;
+      color: var(--text);
+    }
+
+    .header {
+      background: #ffffff;
+      border-bottom: 4px solid var(--prc-blue);
+      text-align: center;
+      padding: 18px 16px;
+    }
+
+    .header .title {
+      margin: 0;
+      color: var(--prc-blue);
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .header .subtitle {
+      margin: 6px 0 0;
+      color: #333;
+      font-size: 15px;
+    }
+
+    .container {
+      width: min(680px, 100%);
+      margin: 24px auto;
+      padding: 0 14px;
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow:
+        0 3px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      color: var(--prc-blue);
+      font-size: 24px;
+    }
+
+    .notice {
+      background: var(--prc-light-blue);
+      border-left: 4px solid var(--prc-blue);
+      border-radius: 6px;
+      padding: 14px;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .camera-frame {
+      width: 100%;
+      background: #111;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--prc-blue);
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      max-height: 68vh;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      background: #111;
+    }
+
+    #photoCanvas {
+      display: none;
+    }
+
+    #capturedPhoto {
+      display: none;
+      width: 100%;
+      max-height: 68vh;
+      aspect-ratio: 4 / 3;
+      object-fit: contain;
+      background: #111;
+      border-radius: 8px;
+      border: 2px solid var(--prc-blue);
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 6px;
+      background: var(--prc-blue);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 12px 18px;
+      cursor: pointer;
+      min-height: 46px;
+    }
+
+    button.secondary {
+      background: #6c757d;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      background: #f0f4f8;
+      line-height: 1.45;
+    }
+
+    .status.error {
+      background: #fdecec;
+      color: #a40000;
+    }
+
+    .status.success {
+      background: #eaf7ed;
+      color: #176b2c;
+    }
+
+    .small {
+      margin-top: 10px;
+      color: #5d6872;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 600px) {
+
+      .header {
+        padding:
+          calc(14px + env(safe-area-inset-top))
+          14px
+          14px;
+      }
+
+      .header .title {
+        font-size: 20px;
+      }
+
+      .container {
+        margin: 12px auto;
+        padding: 0 10px;
+      }
+
+      .card {
+        padding: 14px;
+        border-radius: 8px;
+      }
+
+      h1 {
+        font-size: 21px;
+      }
+
+      button {
+        width: 100%;
+      }
+
+      .buttons {
+        display: grid;
+      }
+
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header">
+    <p class="title">
+      PRC NCR
+    </p>
+    <p class="subtitle">
+      State Board Verification Online Filing System
+    </p>
+  </header>
+
+  <main class="container">
+
+    <section class="card">
+
+      <h1>
+        Live Photo Verification
+      </h1>
+
+      <div class="notice">
+        <strong>
+          Take a live photo of yourself holding your valid PRC ID/e-PIC.
+        </strong>
+        <br><br>
+        Your face and the details on your PRC ID/e-PIC must be clearly
+        visible. For security, this page does not provide an option to
+        upload an existing photo.
+      </div>
+
+      <div class="camera-frame">
+        <video
+          id="cameraVideo"
+          autoplay
+          playsinline
+          muted
+        ></video>
+
+        <img
+          id="capturedPhoto"
+          alt="Captured live photo"
+        >
+      </div>
+
+      <canvas
+        id="photoCanvas"
+      ></canvas>
+
+      <div class="buttons">
+
+        <button
+          type="button"
+          id="startButton"
+        >
+          Start Camera
+        </button>
+
+        <button
+          type="button"
+          id="captureButton"
+          style="display:none;"
+        >
+          Take Live Photo
+        </button>
+
+        <button
+          type="button"
+          id="retakeButton"
+          class="secondary"
+          style="display:none;"
+        >
+          Retake
+        </button>
+
+        <button
+          type="button"
+          id="useButton"
+          style="display:none;"
+        >
+          Use This Photo
+        </button>
+
+      </div>
+
+      <div
+        id="status"
+        class="status"
+      >
+        Click Start Camera to begin.
+      </div>
+
+      <p class="small">
+        On a laptop, the built-in or connected USB webcam will be used.
+        On a phone or tablet, the front-facing camera is preferred.
+        Your browser may ask you to allow camera access.
+      </p>
+
+    </section>
+
+  </main>
+
+  <script>
+
+    let stream = null;
+    let capturedDataUrl = '';
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const returnOrigin =
+      params.get(
+        'returnOrigin'
+      );
+
+    const token =
+      params.get(
+        'token'
+      );
+
+    const video =
+      document.getElementById(
+        'cameraVideo'
+      );
+
+    const canvas =
+      document.getElementById(
+        'photoCanvas'
+      );
+
+    const photo =
+      document.getElementById(
+        'capturedPhoto'
+      );
+
+    const startButton =
+      document.getElementById(
+        'startButton'
+      );
+
+    const captureButton =
+      document.getElementById(
+        'captureButton'
+      );
+
+    const retakeButton =
+      document.getElementById(
+        'retakeButton'
+      );
+
+    const useButton =
+      document.getElementById(
+        'useButton'
+      );
+
+    const status =
+      document.getElementById(
+        'status'
+      );
+
+
+    function setStatus(
+      message,
+      type
+    ) {
+
+      status.textContent =
+        message;
+
+      status.className =
+        'status' +
+        (
+          type
+            ? ' ' + type
+            : ''
+        );
+
+    }
+
+
+    function isMobileDevice() {
+
+      return /Android|webOS|iPhone|iPad|iPod/i
+        .test(
+          navigator.userAgent || ''
+        );
+
+    }
+
+
+    function stopCamera() {
+
+      if (stream) {
+
+        stream
+          .getTracks()
+          .forEach(
+            function(track) {
+
+              track.stop();
+
+            }
+          );
+
+        stream =
+          null;
+
+      }
+
+    }
+
+
+    async function startCamera() {
+
+      if (
+        !window.isSecureContext ||
+        !navigator.mediaDevices ||
+        typeof navigator.mediaDevices.getUserMedia !==
+          'function'
+      ) {
+
+        setStatus(
+          'Camera access is unavailable in this browser or page. Please open this camera page using its HTTPS address in a current version of Chrome, Edge, Firefox, or Safari.',
+          'error'
+        );
+
+        return;
+
+      }
+
+      stopCamera();
+
+      try {
+
+        if (isMobileDevice()) {
+
+          try {
+
+            stream =
+              await navigator.mediaDevices.getUserMedia({
+                video: {
+                  facingMode: {
+                    ideal: 'user'
+                  },
+                  width: {
+                    ideal: 1280
+                  },
+                  height: {
+                    ideal: 720
+                  }
+                },
+                audio: false
+              });
+
+          }
+          catch (frontError) {
+
+            console.warn(
+              'Front camera unavailable; using any available camera.',
+              frontError
+            );
+
+            stream =
+              await navigator.mediaDevices.getUserMedia({
+                video: {
+                  width: {
+                    ideal: 1280
+                  },
+                  height: {
+                    ideal: 720
+                  }
+                },
+                audio: false
+              });
+
+          }
+
+        } else {
+
+          stream =
+            await navigator.mediaDevices.getUserMedia({
+              video: {
+                width: {
+                  ideal: 1280
+                },
+                height: {
+                  ideal: 720
+                }
+              },
+              audio: false
+            });
+
+        }
+
+        video.srcObject =
+          stream;
+
+        video.style.display =
+          'block';
+
+        photo.style.display =
+          'none';
+
+        await video.play();
+
+        startButton.style.display =
+          'none';
+
+        captureButton.style.display =
+          'inline-block';
+
+        retakeButton.style.display =
+          'none';
+
+        useButton.style.display =
+          'none';
+
+        setStatus(
+          'Camera is ready. Position your face and valid PRC ID/e-PIC clearly in the frame.',
+          ''
+        );
+
+      }
+      catch (error) {
+
+        console.error(
+          error
+        );
+
+        let message =
+          'Unable to access the camera. Please allow camera access and try again.';
+
+        if (
+          error.name ===
+            'NotAllowedError' ||
+          error.name ===
+            'PermissionDeniedError'
+        ) {
+
+          message =
+            'Camera permission was denied. Please allow camera access for this camera page in your browser settings, then click Start Camera again.';
+
+        } else if (
+          error.name ===
+            'NotFoundError'
+        ) {
+
+          message =
+            'No camera was detected. Please check your laptop webcam or connect a USB webcam, then try again.';
+
+        } else if (
+          error.name ===
+            'NotReadableError' ||
+          error.name ===
+            'TrackStartError'
+        ) {
+
+          message =
+            'The camera may already be in use by another application such as Zoom, Teams, Meet, or Skype. Close that application and try again.';
+
+        }
+
+        setStatus(
+          message,
+          'error'
+        );
+
+      }
+
+    }
+
+
+    function capturePhoto() {
+
+      if (
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
+
+        setStatus(
+          'The camera is still starting. Please wait a moment and try again.',
+          'error'
+        );
+
+        return;
+
+      }
+
+      const maxDimension =
+        1280;
+
+      const sourceWidth =
+        video.videoWidth;
+
+      const sourceHeight =
+        video.videoHeight;
+
+      const scale =
+        Math.min(
+          1,
+          maxDimension /
+            Math.max(
+              sourceWidth,
+              sourceHeight
+            )
+        );
+
+      canvas.width =
+        Math.round(
+          sourceWidth * scale
+        );
+
+      canvas.height =
+        Math.round(
+          sourceHeight * scale
+        );
+
+      const context =
+        canvas.getContext(
+          '2d',
+          {
+            alpha: false
+          }
+        );
+
+      /*
+       * The video may be mirrored visually on some mobile devices,
+       * but the canvas captures the actual camera image without the
+       * CSS mirror effect.
+       */
+      context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      capturedDataUrl =
+        canvas.toDataURL(
+          'image/jpeg',
+          0.88
+        );
+
+      photo.src =
+        capturedDataUrl;
+
+      video.style.display =
+        'none';
+
+      photo.style.display =
+        'block';
+
+      captureButton.style.display =
+        'none';
+
+      retakeButton.style.display =
+        'inline-block';
+
+      useButton.style.display =
+        'inline-block';
+
+      stopCamera();
+
+      setStatus(
+        'Photo captured. Review it carefully. Make sure your face and the details on your PRC ID/e-PIC are clearly visible.',
+        ''
+      );
+
+    }
+
+
+    function retakePhoto() {
+
+      capturedDataUrl =
+        '';
+
+      photo.src =
+        '';
+
+      photo.style.display =
+        'none';
+
+      retakeButton.style.display =
+        'none';
+
+      useButton.style.display =
+        'none';
+
+      startCamera();
+
+    }
+
+
+    function usePhoto() {
+
+      if (
+        !capturedDataUrl
+      ) {
+
+        setStatus(
+          'Please take the live photo first.',
+          'error'
+        );
+
+        return;
+
+      }
+
+      if (
+        !window.opener ||
+        window.opener.closed
+      ) {
+
+        setStatus(
+          'The original PRC NCR application tab could not be found. Please keep the application tab open and start the camera again from that tab.',
+          'error'
+        );
+
+        return;
+
+      }
+
+      if (
+        !returnOrigin ||
+        !token
+      ) {
+
+        setStatus(
+          'This camera session is invalid. Please close this page and start the camera again from the PRC NCR application.',
+          'error'
+        );
+
+        return;
+
+      }
+
+      try {
+
+        window.opener.postMessage(
+          {
+            type:
+              'PRC_NCR_LIVE_CAMERA_PHOTO',
+            token:
+              token,
+            dataUrl:
+              capturedDataUrl
+          },
+          returnOrigin
+        );
+
+        setStatus(
+          'Live photo sent successfully. Returning to the PRC NCR application...',
+          'success'
+        );
+
+        startButton.disabled =
+          true;
+
+        captureButton.disabled =
+          true;
+
+        retakeButton.disabled =
+          true;
+
+        useButton.disabled =
+          true;
+
+        setTimeout(
+          function() {
+
+            try {
+              window.close();
+            }
+            catch (e) {
+              console.warn(
+                'Camera window could not close automatically.',
+                e
+              );
+            }
+
+          },
+          700
+        );
+
+      }
+      catch (error) {
+
+        console.error(
+          error
+        );
+
+        setStatus(
+          'The live photo could not be returned to the PRC NCR application. Please try again.',
+          'error'
+        );
+
+      }
+
+    }
+
+
+    startButton.addEventListener(
+      'click',
+      startCamera
+    );
+
+    captureButton.addEventListener(
+      'click',
+      capturePhoto
+    );
+
+    retakeButton.addEventListener(
+      'click',
+      retakePhoto
+    );
+
+    useButton.addEventListener(
+      'click',
+      usePhoto
+    );
+
+    window.addEventListener(
+      'beforeunload',
+      stopCamera
+    );
+
+  </script>
+
+</body>
+</html>
